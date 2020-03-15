@@ -49,7 +49,7 @@ function s:Open(zettel_id)
 
   if max_win == 1
     vsplit
-  else
+  elseif current_win == 1
     wincmd p
   endif
 
