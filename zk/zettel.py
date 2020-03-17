@@ -53,6 +53,9 @@ class Zettel:
 
     @classmethod
     def load_from_file(cls, location: Path) -> "Zettel":
+        zettel_id = location.stem
+        if not re.match(ZETTEL_VALID_ID_PATTERN, zettel_id):
+            raise ValueError(f"Path stem is not a valid zettel id: {location.stem}")
         metadata: Dict[str, str] = {}
         content: List[str] = []
         with open(location, "r") as infile:
@@ -66,10 +69,6 @@ class Zettel:
             for line in infile:
                 content.append(line)
 
-        if "id" not in metadata:
-            raise ValueError("File contains no ID metadata.")
-        zettel_id = metadata["id"]
-        del metadata["id"]
         if "title" not in metadata:
             title = zettel_id
         else:
@@ -79,7 +78,7 @@ class Zettel:
         return Zettel(zettel_id, title, metadata, content)
 
     def save_to_file(self, location: Path):
-        metadata = {"id": self.id, "title": self.title, **self.metadata}
+        metadata = {"title": self.title, **self.metadata}
 
         with open(location, "w") as outfile:
             for key, value in metadata.items():

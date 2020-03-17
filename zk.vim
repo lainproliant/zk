@@ -1,13 +1,13 @@
+" -------------------------------------------------------------------
 " VIM Plugin for Lain's Zettelkasten.
 " Last Change: 03/14/20 12:24
 " Maintainer: Lain Musgrove (lainproliant)
 " License: MIT
-
-"if exists("g:loaded_zk") || &cp
-"  finish
-"endif
-
 " -------------------------------------------------------------------
+
+if exists("g:loaded_zk") || &cp
+  finish
+endif
 let g:loaded_zk = 1
 let s:save_cpo = &cpo
 set cpo&vim
@@ -31,7 +31,7 @@ function s:OpenRef(zettel_ref)
   if matchstr(a:zettel_ref, "zk@\\([[:alnum:]_-]\\)\\+") != ""
     call s:Open(split(a:zettel_ref, "@")[1])
   else
-    echom "Not a zettel ref: \"" . a:zettel_ref . "\""
+    echom "ZK: Not a zettel ref: \"" . a:zettel_ref . "\""
   endif
 
 endfunction
