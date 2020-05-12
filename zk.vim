@@ -5,9 +5,16 @@
 " License: MIT
 " -------------------------------------------------------------------
 
+" Terminate if python is not built in.
+if !has('python')
+  finish
+endif
+
+" Terminate if we're already loaded.
 if exists("g:loaded_zk") || &cp
   finish
 endif
+
 let g:loaded_zk = 1
 let s:save_cpo = &cpo
 set cpo&vim
@@ -28,7 +35,7 @@ endif
 function s:OpenRef(zettel_ref)
   " Verify that the zettel_ref is actually a reference,
   " then extract the zettel_id from the ref.
-  if matchstr(a:zettel_ref, "zk@\\([[:alnum:]_-]\\)\\+") != ""
+  if matchstr(a:zettel_ref, "@\\([[:alnum:]_-]\\)\\+") != ""
     call s:Open(split(a:zettel_ref, "@")[1])
   else
     echom "ZK: Not a zettel ref: \"" . a:zettel_ref . "\""

@@ -8,16 +8,23 @@
 # --------------------------------------------------------------------
 
 import re
+from panifex import sh, ShellReport
 from dataclasses import dataclass
 from pathlib import Path
-from subprocess import check_call
 from typing import Any, Dict, List, Set, Tuple, Optional
 
 # --------------------------------------------------------------------
 ZETTEL_METADATA_PATTERN = r"^([\w-]+):(.*)$"  # e.g. "key: value"
 ZETTEL_VALID_ID_PATTERN = r"^[\w-]+$"  # e.g. "20200314-note"
-ZETTEL_REF_PATTERN = "zk@([\\w-]+)"  # e.g. "zk@20200314-note"
+ZETTEL_REF_PATTERN = r"@([\\w-]+)"  # e.g. "@20200314-note"
 EMPTY_LINE_PATTERN = r"^\s*$"
+
+
+# --------------------------------------------------------------------
+class ShellError(Exception):
+    def __init__(self, msg, report: ShellReport):
+        super().__init__(msg)
+        self.report = report
 
 
 # --------------------------------------------------------------------
@@ -109,11 +116,15 @@ class GraphNode:
 class Zettelkasten:
     def __init__(self, location: Path, create=False, verbose=False):
         self.location = location
+        self.branch = "master"
         if not self.location.exists():
             self.location.mkdir(parents=True)
 
-    def _sh(self, *args):
-        check_call(args, cwd=self.location)
+    def sh(self, *args, **kwargs) -> ShellReport:
+        return sh(*args, **{**kwargs, 'cwd': self.location}).no_echo().sync().report()
+
+    def interactive_shell(self, cmd=None):
+        return sh(cmd or '$SHELL', cwd=self.location).interactive().no_echo().sync().report()
 
     def path_for_zettel_id(self, zettel_id: str) -> Path:
         return self.location / f"{zettel_id}.md"
@@ -132,6 +143,28 @@ class Zettelkasten:
     def save(self, zettel: Zettel):
         path = self.path_for_zettel_id(zettel.id)
         zettel.save_to_file(path)
+
+    def has_changes(self) -> bool:
+        report = self.sh('git status --porcelain')
+        return len(list(report.output())) > 0
+
+    def commit_changes(self):
+        report = self.sh('git add .')
+        if not report.succeeded():
+            raise ShellError("Failed to add files to commit.", report)
+        report = self.sh('git commit -m updates')
+        if not report.succeeded():
+            raise ShellError("Failed to commit.", report)
+
+    def fetch_and_rebase(self):
+        report = self.sh('git pull --rebase')
+        if not report.succeeded():
+            raise ShellError("Failed to fetch remote updates.", report)
+
+    def push(self):
+        report = self.sh('git push')
+        if not report.succeeded():
+            raise ShellError("Failed to push to remote origin.", report)
 
     def reidentify(self, zettel: Zettel, new_zettel_id: str) -> Zettel:
         # TODO implement
